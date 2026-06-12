@@ -72,12 +72,14 @@ def export_to_gguf(model_path: str, output_path: str, quantize: str = "q4_0") ->
 
     Returns:
         输出路径
+
+    Raises:
+        NotImplementedError: 需要安装 llama-cpp-python
     """
-    # 需要 llama-cpp-python 或 convert 脚本
-    print(f"导出 GGUF: {model_path} -> {output_path}")
-    print(f"量化方式: {quantize}")
-    print("注意：需要安装 llama-cpp-python 或使用 convert 脚本")
-    return output_path
+    raise NotImplementedError(
+        f"GGUF 导出需要安装 llama-cpp-python 或使用 convert 脚本。"
+        f"参考: https://github.com/ggerganov/llama.cpp#prepare-and-quantize"
+    )
 
 
 def export_to_onnx(model_path: str, output_path: str) -> str:
@@ -90,7 +92,11 @@ def export_to_onnx(model_path: str, output_path: str) -> str:
 
     Returns:
         输出路径
+
+    Raises:
+        NotImplementedError: 需要安装 optimum 库
     """
-    print(f"导出 ONNX: {model_path} -> {output_path}")
-    print("注意：需要安装 optimum 库")
-    return output_path
+    raise NotImplementedError(
+        "ONNX 导出需要安装 optimum 库。"
+        "参考: https://huggingface.co/docs/optimum/onnxruntime/usage_guides/export_a_model"
+    )

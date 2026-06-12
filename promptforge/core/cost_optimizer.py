@@ -54,7 +54,7 @@ class CostOptimizer:
             优化结果
         """
         # 计算预算允许的最大调用次数
-        max_calls = int(budget / (self.cost_per_call * 500))  # 假设每次 500 tokens
+        max_calls = int(budget / (self.cost_per_token * 500))  # 假设每次 500 tokens
 
         if strategy == "greedy":
             return self._greedy_search(questions, max_calls, model_fn, scorer, builder, templates)
