@@ -1,0 +1,33 @@
+# PromptForge 配置文件
+
+# 模型配置
+models:
+  - name: mimo-v2.5-pro
+    base_url: https://token-plan-cn.xiaomimimo.com/v1
+    env_key: ANTHROPIC_AUTH_TOKEN
+
+# 评测参数
+evaluation:
+  max_tokens: 2000
+  temperature: 0.7
+  score_mode: rule  # rule 或 ai
+
+# 搜索参数
+search:
+  grid:
+    roles: [none, expert, professor]
+    formats: [none, structured, bullet]
+    reasonings: [none, cot]
+    fewshots: [none, example_1]
+  bayesian:
+    iterations: 20
+    n_init: 5
+  genetic:
+    population_size: 10
+    generations: 10
+    mutation_rate: 0.2
+
+# 输出配置
+output:
+  reports_dir: reports
+  charts_dir: reports/charts
