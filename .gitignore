@@ -44,3 +44,8 @@ reports/
 *.log
 chroma_db/
 *.db
+faiss_index/
+
+# Experiment results
+experiment_results*.json
+quick_test_results.json
