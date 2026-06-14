@@ -2,18 +2,28 @@
 FastAPI 服务
 
 提供 REST API 接口，支持远程调用 Prompt 优化。
-
-注意：当前为演示模式，/search 和 /evaluate 端点使用模拟模型函数，
-返回的结果不代表真实优化效果。接入真实 API 后请移除 mock_model_fn。
+需要设置 MIMO_API_KEY 环境变量。
 """
 
-import warnings
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
-import json
+import numpy as np
 
 app = FastAPI(title="PromptForge API", version="1.0.0")
+
+# 全局客户端（惰性初始化）
+_client = None
+
+
+def _get_client():
+    """获取或创建 API 客户端"""
+    global _client
+    if _client is None:
+        from ..api.client import create_client_from_env
+        _client = create_client_from_env()
+    return _client
 
 
 class SearchRequest(BaseModel):
@@ -41,33 +51,25 @@ async def root():
 
 @app.post("/search", response_model=SearchResponse)
 async def search_prompts(request: SearchRequest):
-    """搜索最优 prompt 模板"""
-    from ..core.templates import PromptTemplates
-    from ..core.builder import PromptBuilder
-    from ..core.scorer import Scorer
+    """搜索最优 prompt 模板（使用真实 API）"""
     from ..search.grid import GridSearch
     from ..search.bayesian import BayesianSearch
     from ..search.genetic import GeneticSearch
 
-    # 创建模拟模型函数（实际使用时替换为真实 API 调用）
-    warnings.warn("PromptForge API 运行在演示模式，搜索结果基于模拟数据", UserWarning, stacklevel=2)
+    client = _get_client()
 
-    def mock_model_fn(prompt: str) -> str:
-        return f"模拟回答：{prompt[:50]}..."
-
-    searcher = None
     if request.method == "grid":
         searcher = GridSearch()
-        result = searcher.search(request.questions, mock_model_fn,
+        result = searcher.search(request.questions, client,
                                 max_questions=request.max_questions)
     elif request.method == "bayesian":
         searcher = BayesianSearch()
-        result = searcher.search(request.questions, mock_model_fn,
+        result = searcher.search(request.questions, client,
                                 n_iterations=request.iterations,
                                 max_questions=request.max_questions)
     elif request.method == "genetic":
         searcher = GeneticSearch()
-        result = searcher.search(request.questions, mock_model_fn,
+        result = searcher.search(request.questions, client,
                                 generations=request.generations,
                                 max_questions=request.max_questions)
     else:
@@ -84,22 +86,21 @@ async def search_prompts(request: SearchRequest):
 
 @app.post("/evaluate")
 async def evaluate_prompt(config: Dict[str, str], questions: List[Dict]):
-    """评估单个 prompt 配置"""
+    """评估单个 prompt 配置（使用真实 API）"""
     from ..core.builder import PromptBuilder
     from ..core.scorer import Scorer
 
+    client = _get_client()
     builder = PromptBuilder()
     scorer = Scorer()
 
     scores = []
     for q in questions:
         prompt = builder.build(q["question"], config)
-        # 实际使用时调用真实模型
-        answer = f"模拟回答"
+        answer = client(prompt)
         score = scorer.score(q["question"], answer, q.get("expected_hint", ""))
         scores.append(score)
 
-    import numpy as np
     return {
         "config": config,
         "mean_score": round(float(np.mean(scores)), 2),

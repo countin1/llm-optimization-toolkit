@@ -37,7 +37,7 @@ class CostOptimizer:
 
     def optimize_budget(self, questions: List[Dict], budget: float,
                         model_fn, scorer, builder, templates,
-                        strategy: str = "greedy") -> Dict:
+                        strategy: str = "greedy", avg_tokens_per_call: int = 500) -> Dict:
         """
         在预算内搜索最优配置
 
@@ -48,13 +48,14 @@ class CostOptimizer:
             scorer: 评分器
             builder: Prompt 构建器
             templates: 模板管理器
-            strategy: 策略（greedy/random/bayesian）
+            strategy: 策略（greedy/random）
+            avg_tokens_per_call: 每次调用平均 token 数
 
         Returns:
             优化结果
         """
         # 计算预算允许的最大调用次数
-        max_calls = int(budget / (self.cost_per_token * 500))  # 假设每次 500 tokens
+        max_calls = int(budget / (self.cost_per_token * avg_tokens_per_call))
 
         if strategy == "greedy":
             return self._greedy_search(questions, max_calls, model_fn, scorer, builder, templates)

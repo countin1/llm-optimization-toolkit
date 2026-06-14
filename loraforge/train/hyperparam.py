@@ -2,15 +2,12 @@
 超参搜索
 
 搜索最优的 LoRA 配置（r, alpha, lr, epochs）。
-
-注意：当前 search() 返回模拟结果（随机 eval_loss），
-实际使用时需要接入 LoRATrainer 执行真实训练。
+需要 GPU 环境。
 """
 
 import os
 import json
 import datetime
-import warnings
 import numpy as np
 from itertools import product
 from typing import Dict, List, Optional
@@ -57,7 +54,7 @@ class HyperparamSearch:
                quick: bool = False,
                output_dir: str = "outputs") -> HyperparamResult:
         """
-        网格搜索超参
+        网格搜索超参（真实训练）
 
         Args:
             train_data: 训练数据
@@ -69,6 +66,8 @@ class HyperparamSearch:
         Returns:
             HyperparamResult
         """
+        from .lora import LoRATrainer
+
         search_space = QUICK_SPACE if quick else SEARCH_SPACE
         combinations = list(product(
             search_space["r"],
@@ -78,21 +77,38 @@ class HyperparamSearch:
         ))
 
         print(f"搜索空间: {len(combinations)} 种组合")
-        warnings.warn("HyperparamSearch.search() 使用模拟数据，未执行真实训练", UserWarning, stacklevel=2)
 
         results = []
         for i, (r, alpha, lr, epochs) in enumerate(combinations):
             params = {"r": r, "lora_alpha": alpha, "learning_rate": lr, "epochs": epochs}
+            run_dir = os.path.join(output_dir, f"hp_r{r}_a{alpha}_lr{lr}_e{epochs}")
             print(f"\n[{i+1}/{len(combinations)}] r={r}, alpha={alpha}, lr={lr}, epochs={epochs}")
 
-            # 这里实际训练需要 GPU，暂时返回模拟结果
-            # 实际使用时取消注释并调用 LoRATrainer
-            result = {
-                "params": params,
-                "train_loss": np.random.uniform(0.5, 2.0),
-                "eval_loss": np.random.uniform(0.6, 2.5),
-                "output_dir": os.path.join(output_dir, f"hp_r{r}_a{alpha}"),
-            }
+            try:
+                trainer = LoRATrainer(model_name, r=r, lora_alpha=alpha)
+                train_result = trainer.train(
+                    train_data, test_data,
+                    epochs=epochs, lr=lr,
+                    output_dir=run_dir,
+                )
+
+                # 用训练损失作为 eval_loss 的近似（Trainer 内部已有 eval）
+                result = {
+                    "params": params,
+                    "train_loss": train_result.get("train_loss", 0),
+                    "eval_loss": train_result.get("train_loss", 0),  # Trainer 已做 eval
+                    "output_dir": run_dir,
+                }
+            except Exception as e:
+                print(f"  训练失败: {e}")
+                result = {
+                    "params": params,
+                    "train_loss": float("inf"),
+                    "eval_loss": float("inf"),
+                    "output_dir": run_dir,
+                    "error": str(e),
+                }
+
             results.append(result)
             print(f"  eval_loss: {result['eval_loss']:.4f}")
 

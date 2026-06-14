@@ -59,7 +59,31 @@ def prompt_section():
         iterations = st.slider("迭代次数", 5, 50, 20)
 
         if st.button("开始搜索", key="prompt_search"):
-            st.info("搜索中...（需要配置 MIMO_API_KEY 环境变量）")
+            import os
+            if not os.environ.get("MIMO_API_KEY"):
+                st.error("请先设置环境变量 MIMO_API_KEY")
+            else:
+                with st.spinner("正在搜索最优模板..."):
+                    try:
+                        from promptforge.api.client import create_client_from_env
+                        from promptforge.search.grid import GridSearch
+                        from promptforge.core.templates import PromptTemplates
+
+                        client = create_client_from_env()
+                        searcher = GridSearch()
+
+                        # 加载题目
+                        questions_path = BASE_DIR / "promptforge" / "data" / "questions.json"
+                        with open(questions_path, encoding="utf-8") as f:
+                            questions = json.load(f)
+                        if max_questions:
+                            questions = questions[:max_questions]
+
+                        result = searcher.search(questions, client, max_questions=max_questions)
+                        st.success(f"搜索完成！最优模板: {result.best_name}，得分: {result.best_score:.2f}")
+                        st.code(result.summary())
+                    except Exception as e:
+                        st.error(f"搜索失败: {e}")
 
     with col2:
         st.subheader("模板选项")
