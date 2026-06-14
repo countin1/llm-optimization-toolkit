@@ -1,3 +1,7 @@
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![CI](https://github.com/countin1/llm-optimization-toolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/countin1/llm-optimization-toolkit/actions/workflows/ci.yml)
+
 # 🚀 LLM Optimization Toolkit
 
 > 大模型评测 + 优化工具包，包含 Prompt 自动优化和 LoRA 微调两大项目。
