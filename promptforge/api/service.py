@@ -2,8 +2,12 @@
 FastAPI 服务
 
 提供 REST API 接口，支持远程调用 Prompt 优化。
+
+注意：当前为演示模式，/search 和 /evaluate 端点使用模拟模型函数，
+返回的结果不代表真实优化效果。接入真实 API 后请移除 mock_model_fn。
 """
 
+import warnings
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -46,6 +50,8 @@ async def search_prompts(request: SearchRequest):
     from ..search.genetic import GeneticSearch
 
     # 创建模拟模型函数（实际使用时替换为真实 API 调用）
+    warnings.warn("PromptForge API 运行在演示模式，搜索结果基于模拟数据", UserWarning, stacklevel=2)
+
     def mock_model_fn(prompt: str) -> str:
         return f"模拟回答：{prompt[:50]}..."
 

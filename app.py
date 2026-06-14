@@ -11,8 +11,20 @@ LLM Optimization Toolkit — Streamlit 交互式仪表盘
 import streamlit as st
 import json
 import os
+from pathlib import Path
 
 st.set_page_config(page_title="LLM Optimization Toolkit", layout="wide")
+
+BASE_DIR = Path(__file__).parent
+
+
+def load_experiment_results(filename: str = "experiment_results_100q.json"):
+    """加载实验结果 JSON 文件"""
+    path = BASE_DIR / filename
+    if not path.exists():
+        return None
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 def main():
@@ -47,7 +59,7 @@ def prompt_section():
         iterations = st.slider("迭代次数", 5, 50, 20)
 
         if st.button("开始搜索", key="prompt_search"):
-            st.info("搜索中...（需要配置 API Key）")
+            st.info("搜索中...（需要配置 MIMO_API_KEY 环境变量）")
 
     with col2:
         st.subheader("模板选项")
@@ -56,19 +68,21 @@ def prompt_section():
         st.write("**推理指令：** none, cot, think, verify")
         st.write("**Few-shot：** none, example_1")
 
-    st.subheader("搜索结果示例")
-    st.code("""
-最优模板: professor+structured+cot
-最优得分: 7.85
-搜索空间: 36 种组合
+    # 从实验文件加载真实结果
+    data = load_experiment_results()
+    if data and "results" in data:
+        st.subheader(f"实验结果（{data.get('n', '?')} 题, 模型: {data.get('model', '?')}）")
+        results = data["results"]
+        ranked = sorted(results.items(), key=lambda x: x[1]["mean"], reverse=True)
 
-Top 5:
-  1. professor+structured+cot: 7.85
-  2. expert+structured+cot: 7.62
-  3. professor+structured: 7.45
-  4. analyst+structured+cot: 7.38
-  5. expert+bullet+cot: 7.21
-    """)
+        lines = [f"最优模板: {ranked[0][0]}", f"最优得分: {ranked[0][1]['mean']:.2f}",
+                 f"搜索空间: {len(results)} 种组合", "", "Top 5:"]
+        for i, (name, r) in enumerate(ranked[:5], 1):
+            lines.append(f"  {i}. {name}: {r['mean']:.2f}")
+        st.code("\n".join(lines))
+    else:
+        st.subheader("搜索结果")
+        st.warning("未找到实验结果文件，请先运行 `python run_100q.py`")
 
 
 def lora_section():
@@ -97,46 +111,69 @@ def lora_section():
         st.write("| Qwen2.5-7B | 16GB | 8GB |")
         st.write("| Qwen2.5-14B | 28GB | 12GB |")
 
-    st.subheader("训练结果示例")
-    st.code("""
-基座模型: 5.23
-微调模型: 6.87
-提升: +1.64
-Cohen's d: 0.73 (中等效应)
-p 值: 0.0023
-显著性: 是
-    """)
+    st.subheader("训练结果")
+    st.info("运行 `python -m loraforge train` 后，结果将保存在 `outputs/reports/`")
 
 
 def comparison_section():
     """实验对比部分"""
     st.header("实验对比")
 
-    st.subheader("Prompt 优化方法对比")
-    st.write("| 方法 | 最优得分 | API 调用 | 耗时 |")
-    st.write("|------|---------|---------|------|")
-    st.write("| 网格搜索 | 7.85 | 36 | 15min |")
-    st.write("| 贝叶斯优化 | 7.82 | 20 | 8min |")
-    st.write("| 遗传算法 | 7.78 | 30 | 12min |")
+    data = load_experiment_results()
+    if data and "results" in data:
+        results = data["results"]
 
-    st.subheader("微调效果对比")
-    st.write("| 维度 | 微调前 | 微调后 | 提升 | p 值 |")
-    st.write("|------|--------|--------|------|------|")
-    st.write("| 统计知识 | 5.23 | 6.87 | +1.64 | 0.0023 |")
-    st.write("| Python代码 | 6.12 | 7.45 | +1.33 | 0.0045 |")
-    st.write("| 逻辑推理 | 5.89 | 6.98 | +1.09 | 0.0123 |")
+        st.subheader("Prompt 模板对比（真实数据）")
+        st.write("| 模板 | 均分 | 标准差 | 中位数 | 95% CI |")
+        st.write("|------|------|--------|--------|--------|")
+        ranked = sorted(results.items(), key=lambda x: x[1]["mean"], reverse=True)
+        for name, r in ranked:
+            ci = r.get("ci95", 0)
+            st.write(f"| {name} | {r['mean']:.2f} | {r.get('std', 0):.2f} | {r.get('median', 0):.1f} | ±{ci:.2f} |")
+
+        # 统计检验
+        if "baseline" in results and len(results) > 1:
+            from scipy import stats as sp_stats
+            import numpy as np
+            st.subheader("统计检验（vs baseline）")
+            st.write("| 模板 | 差值 | t 值 | p 值 | 显著性 |")
+            st.write("|------|------|------|------|--------|")
+            baseline_scores = results["baseline"]["scores"]
+            for name, r in ranked:
+                if name == "baseline":
+                    continue
+                t_stat, p_val = sp_stats.ttest_rel(baseline_scores, r["scores"])
+                diff = r["mean"] - results["baseline"]["mean"]
+                sig = "***" if p_val < 0.001 else "**" if p_val < 0.01 else "*" if p_val < 0.05 else "ns"
+                st.write(f"| {name} | {diff:+.2f} | {t_stat:.3f} | {p_val:.4f} | {sig} |")
+    else:
+        st.warning("未找到实验结果文件，请先运行 `python run_100q.py`")
 
 
 def interview_section():
     """面试话术部分"""
     st.header("面试话术")
 
-    st.subheader("Prompt 优化")
-    st.info("""
-我做了一个 Prompt 自动优化框架，用网格搜索 + 贝叶斯优化在 36 种模板中找到最优组合。
-在统计题上比 baseline 提升 15%，Cohen's d = 0.73，p < 0.01。
-贝叶斯优化只用 20 次迭代就接近网格搜索 36 次的结果，节省 60% API 调用。
-    """)
+    # 从真实数据动态生成话术
+    data = load_experiment_results()
+    if data and "results" in data:
+        results = data["results"]
+        ranked = sorted(results.items(), key=lambda x: x[1]["mean"], reverse=True)
+        best_name, best_data = ranked[0]
+        baseline_mean = results.get("baseline", {}).get("mean", 0)
+        improvement = best_data["mean"] - baseline_mean
+        n = data.get("n", 100)
+        model = data.get("model", "LLM")
+
+        st.subheader("Prompt 优化")
+        st.info(f"""
+我做了一个 Prompt 自动优化框架，在 {len(results)} 种模板中找到最优组合 `{best_name}`。
+在 {n} 道题上均分 {best_data['mean']:.2f}，比 baseline ({baseline_mean:.2f}) 提升 {improvement:+.2f}。
+模型：{model}。
+        """)
+    else:
+        st.subheader("Prompt 优化")
+        st.info("运行 `python run_100q.py` 后，将自动生成基于真实数据的面试话术。")
 
     st.subheader("LoRA 微调")
     st.info("""

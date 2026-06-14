@@ -4,6 +4,9 @@
 支持两种评分模式：
 - rule: 规则评分（基于关键词匹配，不花 token）
 - ai: AI 评分（LLM-as-judge，需要 API）
+
+注意：rule_score 在 loraforge/eval/stats.py 中有一份相同实现（用于独立运行）。
+如需修改，请同步更新两处。
 """
 
 import re
@@ -24,28 +27,23 @@ def rule_score(answer: str, expected_hint: str = "") -> int:
     """
     score = 3
 
-    # 关键词命中
     if expected_hint:
         hints = [h.strip() for h in expected_hint.replace("；", ";").split(";") if h.strip()]
         if hints:
             hits = sum(1 for h in hints if h.lower() in answer.lower())
             score += round((hits / len(hints)) * 4)
 
-    # 回答长度
     if len(answer) > 200:
         score += 1
     if len(answer) > 500:
         score += 1
 
-    # 结构化标记
     if any(marker in answer for marker in ["##", "| ", "1.", "- ", "```"]):
         score += 1
 
-    # 错误检测
     if "[ERROR]" in answer:
         score = 1
 
-    # 过短
     if len(answer) < 20:
         score = min(score, 2)
 

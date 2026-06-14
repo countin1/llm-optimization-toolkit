@@ -21,23 +21,23 @@ class ModelClient:
         self.temperature = temperature
 
     def __call__(self, prompt: str) -> str:
-        """调用模型"""
-        try:
-            resp = self.client.chat.completions.create(
-                model=self.model,
-                max_tokens=self.max_tokens,
-                temperature=self.temperature,
-                messages=[{"role": "user", "content": prompt}],
-                timeout=60,
-            )
-            return resp.choices[0].message.content
-        except Exception as e:
-            return f"[ERROR] {e}"
+        """调用模型，异常由调用方处理"""
+        resp = self.client.chat.completions.create(
+            model=self.model,
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            messages=[{"role": "user", "content": prompt}],
+            timeout=60,
+        )
+        return resp.choices[0].message.content
 
 
 def create_client_from_env(model: str = "mimo-v2.5-pro") -> ModelClient:
     """
     从环境变量创建客户端
+
+    环境变量:
+        MIMO_API_KEY: API 密钥（必需）
 
     Args:
         model: 模型名称
@@ -45,9 +45,9 @@ def create_client_from_env(model: str = "mimo-v2.5-pro") -> ModelClient:
     Returns:
         ModelClient 实例
     """
-    api_key = os.environ.get("ANTHROPIC_AUTH_TOKEN", "")
+    api_key = os.environ.get("MIMO_API_KEY", "")
     if not api_key:
-        raise ValueError("环境变量 ANTHROPIC_AUTH_TOKEN 未设置")
+        raise ValueError("环境变量 MIMO_API_KEY 未设置")
 
     return ModelClient(
         api_key=api_key,

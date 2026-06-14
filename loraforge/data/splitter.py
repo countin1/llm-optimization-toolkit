@@ -5,6 +5,7 @@
 """
 
 import random
+import warnings
 from typing import Dict, List, Tuple
 
 
@@ -35,8 +36,18 @@ class DataSplitter:
         test_data = []
 
         for dim, items in by_dim.items():
+            if len(items) < 2:
+                warnings.warn(
+                    f"维度 '{dim}' 只有 {len(items)} 条数据，无法划分训练/测试集，全部放入训练集",
+                    UserWarning, stacklevel=2,
+                )
+                train_data.extend(items)
+                continue
+
             random.shuffle(items)
             split_idx = int(len(items) * train_ratio)
+            # 确保训练集和测试集都至少有 1 条
+            split_idx = max(1, min(split_idx, len(items) - 1))
             train_data.extend(items[:split_idx])
             test_data.extend(items[split_idx:])
 

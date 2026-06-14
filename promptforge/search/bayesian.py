@@ -83,7 +83,7 @@ class BayesianSearch:
 
     def _gp_predict(self, X_train: np.ndarray, y_train: np.ndarray,
                      X_test: np.ndarray, length_scale: float = 1.0):
-        """简化高斯过程预测（RBF 核）— 向量化版本"""
+        """简化高斯过程预测（RBF 核）— 向量化版本，使用 solve 替代 inv 提升数值稳定性"""
         # 训练集核矩阵 (向量化)
         dist_train = np.sum((X_train[:, None] - X_train[None, :]) ** 2, axis=-1)
         K = np.exp(-dist_train / (2 * length_scale ** 2)) + np.eye(len(X_train)) * 0.01
@@ -92,13 +92,13 @@ class BayesianSearch:
         dist_test = np.sum((X_test[:, None] - X_train[None, :]) ** 2, axis=-1)
         K_star = np.exp(-dist_test / (2 * length_scale ** 2))
 
-        # 预测
-        K_inv = np.linalg.inv(K)
-        mu = K_star @ K_inv @ y_train
+        # 预测 — 用 solve 替代 inv，数值更稳定
+        mu = K_star @ np.linalg.solve(K, y_train)
 
         dist_test_test = np.sum((X_test[:, None] - X_test[None, :]) ** 2, axis=-1)
         K_star_star = np.exp(-dist_test_test / (2 * length_scale ** 2))
-        sigma = np.sqrt(np.abs(np.diag(K_star_star - K_star @ K_inv @ K_star.T)))
+        V = np.linalg.solve(K, K_star.T)
+        sigma = np.sqrt(np.abs(np.diag(K_star_star - K_star @ V)))
         return mu, sigma
 
     def _generate_random_config(self) -> Dict[str, str]:

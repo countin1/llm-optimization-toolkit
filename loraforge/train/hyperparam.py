@@ -2,11 +2,15 @@
 超参搜索
 
 搜索最优的 LoRA 配置（r, alpha, lr, epochs）。
+
+注意：当前 search() 返回模拟结果（随机 eval_loss），
+实际使用时需要接入 LoRATrainer 执行真实训练。
 """
 
 import os
 import json
 import datetime
+import warnings
 import numpy as np
 from itertools import product
 from typing import Dict, List, Optional
@@ -74,6 +78,7 @@ class HyperparamSearch:
         ))
 
         print(f"搜索空间: {len(combinations)} 种组合")
+        warnings.warn("HyperparamSearch.search() 使用模拟数据，未执行真实训练", UserWarning, stacklevel=2)
 
         results = []
         for i, (r, alpha, lr, epochs) in enumerate(combinations):

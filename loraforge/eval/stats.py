@@ -1,7 +1,10 @@
 """
 统计检验模块
 
-配对 t 检验 + Cohen's d 效应量。
+配对 t 检验 + Cohen's d 效应量 + 规则评分。
+
+注意：rule_score/paired_t_test/cohens_d 在 promptforge/core/scorer.py 和
+promptforge/analysis/stats.py 中有相同实现。如需修改，请同步更新。
 """
 
 import numpy as np

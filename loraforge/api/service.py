@@ -2,8 +2,12 @@
 FastAPI 服务
 
 提供 REST API 接口，支持远程调用微调和评测。
+
+注意：当前为演示模式，/train 和 /eval 端点返回模拟响应，
+实际训练和评测需要 GPU 环境和真实模型。
 """
 
+import warnings
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional
@@ -69,8 +73,8 @@ async def prepare_data(request: DataRequest):
 
 @app.post("/train")
 async def train_model(request: TrainRequest):
-    """启动训练"""
-    # 实际使用时需要 GPU 环境
+    """启动训练（演示模式，实际需要 GPU 环境）"""
+    warnings.warn("LoRAForge API /train 端点运行在演示模式，未执行真实训练", UserWarning, stacklevel=2)
     return {
         "status": "submitted",
         "model": request.model_name,
@@ -82,8 +86,8 @@ async def train_model(request: TrainRequest):
 
 @app.post("/eval")
 async def evaluate_model(request: EvalRequest):
-    """评测模型"""
-    # 实际使用时加载模型并评测
+    """评测模型（演示模式，实际需要加载模型）"""
+    warnings.warn("LoRAForge API /eval 端点运行在演示模式，未执行真实评测", UserWarning, stacklevel=2)
     return {
         "status": "submitted",
         "base_model": request.base_model,

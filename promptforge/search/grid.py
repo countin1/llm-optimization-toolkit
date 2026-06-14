@@ -96,10 +96,22 @@ class GridSearch:
 
         # 统计比较
         from scipy import stats as sp_stats
-        from scipy.stats import norm
 
         best_name = max(all_results, key=lambda k: all_results[k]["mean"])
-        baseline_scores = np.array(all_results.get("baseline", list(all_results.values())[0])["scores"])
+
+        if "baseline" in all_results:
+            baseline_scores = np.array(all_results["baseline"]["scores"])
+        else:
+            # 无 baseline 配置时，使用 none+none+none+none 作为 baseline
+            baseline_config = {"role": "none", "format": "none", "reasoning": "none", "fewshot": "none"}
+            baseline_name = self.templates.config_to_name(baseline_config)
+            if baseline_name in all_results:
+                baseline_scores = np.array(all_results[baseline_name]["scores"])
+            else:
+                raise ValueError(
+                    f"搜索空间中未找到 baseline 配置 ({baseline_name})。"
+                    f"请确保搜索空间包含 role/format/reasoning/fewshot 均为 'none' 的配置。"
+                )
 
         comparisons = []
         for name, data in all_results.items():

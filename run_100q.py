@@ -15,10 +15,15 @@ import json
 import time
 import sys
 import argparse
+from pathlib import Path
 import numpy as np
 from scipy import stats
 
 sys.stdout.reconfigure(encoding='utf-8')
+
+# 使用相对于脚本位置的路径，支持从任意目录运行
+SCRIPT_DIR = Path(__file__).parent
+QUESTIONS_PATH = SCRIPT_DIR / "promptforge" / "data" / "questions.json"
 
 from promptforge.api.client import create_client_from_env
 from promptforge.core.builder import PromptBuilder
@@ -227,7 +232,7 @@ def main():
     args = parser.parse_args()
 
     # 加载题目
-    with open('promptforge/data/questions.json', encoding='utf-8') as f:
+    with open(QUESTIONS_PATH, encoding='utf-8') as f:
         questions = json.load(f)
     if args.max_questions > 0:
         questions = questions[:args.max_questions]

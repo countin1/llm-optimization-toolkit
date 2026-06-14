@@ -60,7 +60,12 @@ class DataLoader:
         return data
 
     def _generate_answer(self, expected_hint: str) -> Optional[str]:
-        """根据 expected_hint 构造参考答案"""
+        """
+        根据 expected_hint 构造参考答案
+
+        注意：生成的是 hint 的编号拼接（简化版），不是完整回答。
+        如需更高质量的训练数据，建议用 LLM 生成完整参考答案。
+        """
         if not expected_hint:
             return None
         hints = [h.strip() for h in expected_hint.replace("；", ";").split(";") if h.strip()]
