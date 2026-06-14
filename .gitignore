@@ -46,6 +46,6 @@ chroma_db/
 *.db
 faiss_index/
 
-# Experiment results
-experiment_results*.json
-quick_test_results.json
+# Experiment results (保留用于复现和面试展示)
+# experiment_results*.json
+# quick_test_results.json

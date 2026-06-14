@@ -6,6 +6,29 @@
 
 > 大模型评测 + 优化工具包，包含 Prompt 自动优化和 LoRA 微调两大项目。
 
+## 🚀 快速开始
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/countin1/llm-optimization-toolkit.git
+cd llm-optimization-toolkit
+
+# 2. 安装依赖
+pip install -r requirements.txt
+
+# 3. 配置 API Key（PromptForge 需要）
+export MIMO_API_KEY="your-api-key"
+
+# 4. 运行 Streamlit 仪表盘
+streamlit run app.py
+
+# 5. 运行 Prompt 优化实验（100 题）
+python run_100q.py
+
+# 6. 运行 LoRA 微调（需要 GPU）
+python -m loraforge train --model Qwen/Qwen2.5-7B --epochs 3
+```
+
 ## 📦 包含项目
 
 ### 🔥 [PromptForge](./promptforge/) — Prompt 自动优化框架
@@ -22,7 +45,7 @@
 - 高级统计：Bootstrap CI、交叉验证、功效分析
 
 **面试话术：**
-> "我用网格搜索 + 贝叶斯优化在 36 种模板中找到最优组合，统计题提升 15%，Cohen's d = 0.73，p < 0.01。"
+> "我用网格搜索 + 贝叶斯优化在 54 种模板中找到最优组合 `expert`，100 道题均分 6.03，比 baseline (5.78) 提升 4.3%。配对 t 检验 t=2.13, p<0.05，Cohen's d = 0.24。"
 
 ---
 
@@ -39,7 +62,7 @@
 - 统计验证：配对 t 检验 + Cohen's d
 
 **面试话术：**
-> "我用 LoRA 微调 Qwen2.5-7B，统计知识维度 Cohen's d = 0.73，p < 0.01。QLoRA 4bit 量化让 7B 模型只需 6GB 显存。"
+> "我用 LoRA 微调 Qwen2.5-0.5B，20 道题均分从 5.0 提升到 5.9（+18%），配对 t 检验 t=5.63, p<0.001，Cohen's d = 1.26（大效应）。QLoRA 4bit 量化让 7B 模型只需 6GB 显存。"
 
 ---
 
